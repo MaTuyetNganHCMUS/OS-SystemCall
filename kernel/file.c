@@ -180,3 +180,18 @@ filewrite(struct file *f, uint64 addr, int n)
   return ret;
 }
 
+// Count number of open files system-wide
+uint64
+count_open_files(void)
+{
+  uint64 n = 0;
+  acquire(&ftable.lock);
+  struct file *f;
+  for(f = ftable.file; f < ftable.file + NFILE; f++){
+    if(f->ref > 0)
+      n++;
+  }
+  release(&ftable.lock);
+  return n;
+}
+

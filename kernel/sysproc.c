@@ -5,6 +5,7 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "sysinfo.h"
 
 uint64
 sys_exit(void)
@@ -99,5 +100,27 @@ sys_trace(void)
   
   argint(0, &mask);
   myproc()->trace_mask = mask;
+  return 0;
+}
+
+// sysinfo system call: copy system information to user-provided buffer
+uint64
+sys_sysinfo(void)
+{
+  uint64 uaddr; // user address to copy struct sysinfo to
+  struct sysinfo si;
+
+  argaddr(0, &uaddr);
+  if (uaddr == 0)
+    return -1;
+
+  // compute fields
+  si.freemem = count_free_mem();
+  si.nproc = count_active_proc();
+  si.nopenfiles = count_open_files();
+
+  // copy to user space
+  if (copyout(myproc()->pagetable, uaddr, (char*)&si, sizeof(si)) < 0)
+    return -1;
   return 0;
 }

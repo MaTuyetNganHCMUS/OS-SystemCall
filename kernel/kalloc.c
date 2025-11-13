@@ -91,3 +91,18 @@ kalloc(void)
   return (void*)r;
 }
 
+// Count total free memory in bytes by traversing the free list.
+uint64
+count_free_mem(void)
+{
+  uint64 bytes = 0;
+  acquire(&kmem.lock);
+  struct run *r = kmem.freelist;
+  while (r) {
+    bytes += PGSIZE;
+    r = r->next;
+  }
+  release(&kmem.lock);
+  return bytes;
+}
+

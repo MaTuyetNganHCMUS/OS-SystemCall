@@ -697,3 +697,18 @@ procdump(void)
     printf("\n");
   }
 }
+
+// Count processes that are not UNUSED
+uint64
+count_active_proc(void)
+{
+  uint64 n = 0;
+  struct proc *p;
+  for(p = proc; p < &proc[NPROC]; p++){
+    acquire(&p->lock);
+    if(p->state != UNUSED)
+      n++;
+    release(&p->lock);
+  }
+  return n;
+}

@@ -141,6 +141,85 @@ void testbad() {
   }
 }
 
+void
+testopenfiles()
+{
+  struct sysinfo info;
+  uint64 base;
+  int fd1, fd2, d;
+
+  sinfo(&info);
+  base = info.nopenfiles;
+
+  // open two separate file descriptors (each should allocate a file struct)
+  fd1 = open("README", 0);
+  if(fd1 < 0){
+    printf("sysinfotest: open README failed\n");
+    exit(1);
+  }
+  sinfo(&info);
+  if(info.nopenfiles != base+1){
+    printf("sysinfotest: FAIL nopenfiles %ld instead of %ld after first open\n", info.nopenfiles, base+1);
+    exit(1);
+  }
+
+  fd2 = open("README", 0);
+  if(fd2 < 0){
+    printf("sysinfotest: open README second failed\n");
+    exit(1);
+  }
+  sinfo(&info);
+  if(info.nopenfiles != base+2){
+    printf("sysinfotest: FAIL nopenfiles %ld instead of %ld after second open\n", info.nopenfiles, base+2);
+    exit(1);
+  }
+
+  // dup should not create a new file struct (only increment ref)
+  d = dup(fd1);
+  if(d < 0){
+    printf("sysinfotest: dup failed\n");
+    exit(1);
+  }
+  sinfo(&info);
+  if(info.nopenfiles != base+2){
+    printf("sysinfotest: FAIL nopenfiles %ld instead of %ld after dup\n", info.nopenfiles, base+2);
+    exit(1);
+  }
+
+  // close fd2 (its file struct ref should go to 0)
+  if(close(fd2) < 0){
+    printf("sysinfotest: close failed\n");
+    exit(1);
+  }
+  sinfo(&info);
+  if(info.nopenfiles != base+1){
+    printf("sysinfotest: FAIL nopenfiles %ld instead of %ld after close fd2\n", info.nopenfiles, base+1);
+    exit(1);
+  }
+
+  // close fd1 (still referenced by dup), should not free file struct yet
+  if(close(fd1) < 0){
+    printf("sysinfotest: close fd1 failed\n");
+    exit(1);
+  }
+  sinfo(&info);
+  if(info.nopenfiles != base+1){
+    printf("sysinfotest: FAIL nopenfiles %ld instead of %ld after close fd1\n", info.nopenfiles, base+1);
+    exit(1);
+  }
+
+  // close dup; now the original file struct should be freed
+  if(close(d) < 0){
+    printf("sysinfotest: close dup failed\n");
+    exit(1);
+  }
+  sinfo(&info);
+  if(info.nopenfiles != base){
+    printf("sysinfotest: FAIL nopenfiles %ld instead of %ld after close dup\n", info.nopenfiles, base);
+    exit(1);
+  }
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -148,6 +227,7 @@ main(int argc, char *argv[])
   testcall();
   testmem();
   testproc();
+  testopenfiles();
   printf("sysinfotest: OK\n");
   exit(0);
 }
