@@ -99,7 +99,7 @@ sys_trace(void)
   int mask;
   
   argint(0, &mask);
-  myproc()->trace_mask = mask;
+  myproc()->mask = mask;
   return 0;
 }
 

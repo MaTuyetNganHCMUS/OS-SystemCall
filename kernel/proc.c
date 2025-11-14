@@ -124,7 +124,7 @@ allocproc(void)
 found:
   p->pid = allocpid();
   p->state = USED;
-  p->trace_mask = 0; // reset trace mask
+  // p->mask = 0;    
 
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
@@ -170,7 +170,7 @@ freeproc(struct proc *p)
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
-  p->trace_mask = 0; // reset trace mask
+  // p->mask = 0; 
 }
 
 // Create a user page table for a given process, with no user memory,
@@ -313,7 +313,7 @@ fork(void)
   safestrcpy(np->name, p->name, sizeof(p->name));
 
   // Copy trace mask from parent to child
-  np->trace_mask = p->trace_mask;
+  np->mask = p->mask;
   pid = np->pid;
 
   release(&np->lock);
